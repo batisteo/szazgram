@@ -2,14 +2,34 @@ import csv
 
 import requests
 
+from django.conf import settings
+from django.core.cache import cache
+
 from .models import Illustration
 
 
-def fetch_csv(url):
-    r = requests.get(url)
-    return r.text.splitlines()
+def fetch_csv(url=None):
+    url = url or settings.DATA_URL
+    try:
+        r = cache.get_or_set('csv_file', requests.get(url), 60)
+        return r.text.splitlines()
+    except ConnectionError as e:
+        return []
 
-def get_offline_csv(path):
+def load_csv():
+    if settings.DEVEL:
+        load_debug_csv()
+        return
+    try:
+        f = fetch_csv()
+        reader = csv.DictReader(f)
+        for line in reader:
+            populate_database(line)
+    except ConnectionError:
+        load_debug_csv()
+
+def load_debug_csv(path=None):
+    path = path or settings.DATA_PATH
     with open(path) as f:
         reader = csv.DictReader(f)
         for line in reader:
