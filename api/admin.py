@@ -1,3 +1,8 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import Illustration
+
+
+@admin.register(Illustration)
+class IllustrationAdmin(admin.ModelAdmin):
+    list_display = ('title', 'description', 'image_url')
